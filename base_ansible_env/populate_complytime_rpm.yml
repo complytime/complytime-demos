@@ -1,0 +1,44 @@
+---
+- name: "Prepare the environment to build ComplyTime RPM on the Demo VM"
+  hosts: demo_vm
+  become: false
+  tasks:
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name:
+          - git
+          - make
+          - go-toolset
+        state: present
+      become: true
+
+    - name: "Copy ComplyTime SPEC file to Demo VM"
+      ansible.builtin.copy:
+        src: "complytime.spec"
+        dest: "~"
+        mode: "0640"
+
+    - name: "Ensure the RPM build tree is created"
+      ansible.builtin.command:
+        cmd: "rpmdev-setuptree"
+      changed_when: false
+
+    - name: "Download the ComplyTime source code as informed in the SPEC file"
+      ansible.builtin.command:
+        cmd: "spectool -g complytime.spec"
+      changed_when: false
+
+    - name: "Copy ComplyTime source code to the RPM build tree"
+      ansible.builtin.copy:
+        src: "~/v0.0.2.tar.gz"
+        dest: "~/rpmbuild/SOURCES/"
+        mode: "0640"
+        remote_src: true
+
+    - name: "Ensure GOTOOLCHAIN=auto is set for a specific user"
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: 'export GOTOOLCHAIN=auto'
+        insertafter: EOF
+        state: present
+...
