@@ -1,0 +1,56 @@
+---
+- name: "Populate the ComplyTime Demo VM with CIS content for RHEL 9"
+  hosts: demo_vm
+  become: false
+  vars:
+    catalog_file: "cis-catalog.json"
+    profile_file: "cis-l2-server-profile.json"
+    component_definition_file: "cis-component-definition.json"
+    complytime_workspace: "~/.config/complytime"
+
+  tasks:
+    - name: "Check existing ComplyTime directories in case there is already a Workspace"
+      ansible.builtin.stat:
+        path: "{{ complytime_workspace }}"
+      register: result_complytime_workspace
+
+    - name: "Initialize ComplyTime to ensure the Workspace is created"
+      ansible.builtin.command:
+        cmd: "~/bin/complytime list"
+      failed_when: false
+      changed_when: result_complytime_workspace.stat.exists
+      when: not result_complytime_workspace.stat.exists
+
+    - name: "Copy OSCAL Catalog to Demo VM"
+      ansible.builtin.copy:
+        src: "{{ catalog_file }}"
+        dest: "{{ complytime_workspace }}/controls"
+        mode: "0640"
+
+    - name: "Copy OSCAL Profile to Demo VM"
+      ansible.builtin.copy:
+        src: "{{ profile_file }}"
+        dest: "{{ complytime_workspace }}/controls"
+        mode: "0640"
+      notify: "Update catalog references"
+
+    - name: "Copy OSCAL Component Definition to Demo VM"
+      ansible.builtin.copy:
+        src: "{{ component_definition_file }}"
+        dest: "{{ complytime_workspace }}/bundles"
+        mode: "0640"
+      notify: "Update profile references"
+
+  handlers:
+    - name: "Update profile references"
+      ansible.builtin.replace:
+        path: "{{ complytime_workspace }}/bundles/{{ component_definition_file }}"
+        regexp: "trestle://.*"
+        replace: "trestle://controls/{{ profile_file }}\","
+
+    - name: "Update catalog references"
+      ansible.builtin.replace:
+        path: "{{ complytime_workspace }}/controls/{{ profile_file }}"
+        regexp: "trestle://.*"
+        replace: "trestle://controls/{{ catalog_file }}\","
+...
