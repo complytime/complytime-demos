@@ -5,7 +5,7 @@
   vars:
     # Update according to where https://github.com/complytime/complytime.git was cloned
     complytime_repo_dest: "~/GIT/ProdSec/complytime"
-    complytime_workspace: "~/.config/complytime"
+    complytime_workspace: "~/.local/share/complytime"
 
   tasks:
     - name: "Lets Pray for the God of Demos"

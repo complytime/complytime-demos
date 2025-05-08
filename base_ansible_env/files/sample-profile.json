@@ -9,7 +9,7 @@
     },
     "imports": [
       {
-        "href": "file://catalog.json",
+        "href": "file://controls/sample-catalog.json",
         "include-controls": [
           {
             "with-ids": [

@@ -30,7 +30,7 @@
 
     - name: "Copy ComplyTime source code to the RPM build tree"
       ansible.builtin.copy:
-        src: "~/v0.0.2.tar.gz"
+        src: "~/v0.0.5.tar.gz"
         dest: "~/rpmbuild/SOURCES/"
         mode: "0640"
         remote_src: true

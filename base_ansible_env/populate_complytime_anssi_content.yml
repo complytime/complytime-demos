@@ -6,7 +6,7 @@
     catalog_file: "anssi-catalog.json"
     profile_file: "anssi-minimal-profile.json"
     component_definition_file: "anssi-component-definition.json"
-    complytime_workspace: "~/.config/complytime"
+    complytime_workspace: "~/.local/share/complytime"
 
   tasks:
     - name: "Check existing ComplyTime directories in case there is already a Workspace"
