@@ -5,7 +5,7 @@
   vars:
     # Update according to where https://github.com/complytime/complytime.git was cloned
     complytime_repo_dest: "~/GIT/ProdSec/complytime"
-    complytime_workspace: "~/.config/complytime"
+    complytime_workspace: "~/.local/share/complytime"
 
   tasks:
     - name: "Lets Pray for the God of Demos"
@@ -30,6 +30,13 @@
         dest: "~/bin/complytime"
         mode: "0750"
 
+    - name: "Ensure COMPLYTIME_DEV_MODE=1 is set for a specific user"
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: 'export COMPLYTIME_DEV_MODE=1'
+        insertafter: EOF
+        state: present
+
     - name: "Check existing ComplyTime directories in case there is already a Workspace"
       ansible.builtin.stat:
         path: "{{ complytime_workspace }}"
@@ -38,8 +45,10 @@
     - name: "Initialize ComplyTime to ensure the Workspace is created"
       ansible.builtin.command:
         cmd: "~/bin/complytime list"
+      environment:
+        COMPLYTIME_DEV_MODE: "1"
       failed_when: false
-      changed_when: result_complytime_workspace.stat.exists
+      changed_when: not result_complytime_workspace.stat.exists
       when: not result_complytime_workspace.stat.exists
 
     - name: "Copy OpenSCAP plugin binary to Demo VM"

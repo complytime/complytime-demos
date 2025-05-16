@@ -77,13 +77,14 @@ After running this Playbook a directory structure similar to this is expected in
 ...
 ├── bin
 │   └── complytime
-├── .config
-│   └── complytime
-│       ├── bundles
-│       ├── controls
-│       └── plugins
-│           ├── c2p-openscap-manifest.json
-│           └── openscap-plugin
+├── .local
+│   └── share
+│       └── complytime
+│           ├── bundles
+│           ├── controls
+│           └── plugins
+│               ├── c2p-openscap-manifest.json
+│               └── openscap-plugin
 ...
 ```
 
@@ -100,16 +101,17 @@ After running this Playbook a directory structure similar to this is expected in
 ...
 ├── bin
 │   └── complytime
-├── .config
-│   └── complytime
-│       ├── bundles
-│       │   └── anssi-component-definition.json
-│       ├── controls
-│           ├── anssi-minimal-profile.json
-│       │   └── anssi-catalog.json
-│       └── plugins
-│           ├── c2p-openscap-manifest.json
-│           └── openscap-plugin
+├── .local
+│   └── share
+│       └── complytime
+│           ├── bundles
+│           │   └── anssi-component-definition.json
+│           ├── controls
+│           │   └── anssi-minimal-profile.json
+│           │   └── anssi-catalog.json
+│           └── plugins
+│               ├── c2p-openscap-manifest.json
+│               └── openscap-plugin
 ...
 ```
 
