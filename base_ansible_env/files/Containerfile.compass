@@ -1,0 +1,22 @@
+FROM registry.access.redhat.com/ubi9/go-toolset:latest AS build-stage
+USER 0
+WORKDIR /build
+
+COPY compass/. .
+
+RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go build -o compass ./cmd/compass
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+RUN microdnf install -y ca-certificates
+RUN update-ca-trust
+
+ARG USER_UID=10001
+USER ${USER_UID}
+
+COPY --chmod=755 --from=build-stage /build/compass /compass
+
+ENTRYPOINT ["/compass"]
+CMD ["--port", "8081"]
+
+EXPOSE 8081
