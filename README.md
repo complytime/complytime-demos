@@ -167,3 +167,18 @@ Another recommendation is to connect to the Demo VM and trying to reproduce some
 ```bash
 ansible-playbook demo_complyctl_fedora.yml
 ```
+
+### run_complybeacon_fedora.yml
+
+This playbook will copy your local complybeacon dir to a fedora vm, then configure all things needed to run the whole complybeacon stack. After running this playbook, you will get a complybeacon environment ready to use.
+
+#### Requirements
+
+- [Vagrant Box with Fedora 42](#base-fedora-vm)
+
+`complybeacon_local_dir` is your local complybeacon dir
+
+```bash
+cd base_ansible_env/
+ansible-playbook run_complybeacon_fedora.yml -e "complybeacon_local_dir=/develop/fork/complybeacon"
+```

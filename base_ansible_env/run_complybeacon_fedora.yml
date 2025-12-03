@@ -1,0 +1,156 @@
+---
+- name: "Deploy and run complybeacon on Fedora VM"
+  hosts: demo_vm
+  become: false
+  vars:
+    # User-configurable variable: Path to complybeacon repository on the LOCAL machine
+    complybeacon_local_dir: ""
+
+    # Path on the remote VM where complybeacon will be deployed
+    complybeacon_remote_dir: "~/complybeacon"
+
+  tasks:
+    - name: "Prep - Ensure required packages are installed"
+      ansible.builtin.dnf:
+        name:
+          - podman
+          - podman-compose
+          - openssl
+          - make
+        state: present
+      become: true
+
+    - name: "Prep - Copy complybeacon from local machine to VM"
+      ansible.posix.synchronize:
+        src: "{{ complybeacon_local_dir }}/"
+        dest: "{{ complybeacon_remote_dir }}"
+        delete: false
+        rsync_opts:
+          - "--exclude=.idea"
+          - "--exclude=*.log"
+
+    - name: "Prep - Replace Containerfile.compass with custom version"
+      ansible.builtin.copy:
+        src: "files/Containerfile.compass"
+        dest: "{{ complybeacon_remote_dir }}/compass/images/Containerfile.compass"
+        mode: '0644'
+        force: true
+
+    - name: "Prep - Replace Containerfile.collector with custom version"
+      ansible.builtin.copy:
+        src: "files/Containerfile.collector"
+        dest: "{{ complybeacon_remote_dir }}/beacon-distro/Containerfile.collector"
+        mode: '0644'
+        force: true
+
+    - name: "Prep - Get git remote URL from complybeacon repository"
+      ansible.builtin.shell:
+        cmd: git remote get-url origin | sed 's|https://github.com/||' | sed 's|git@github.com:||' | sed 's|\.git$||'
+        chdir: "{{ complybeacon_remote_dir }}"
+      register: git_repo_path
+      changed_when: false
+
+    - name: "Prep - Get current git branch from complybeacon repository"
+      ansible.builtin.command:
+        cmd: git rev-parse --abbrev-ref HEAD
+        chdir: "{{ complybeacon_remote_dir }}"
+      register: git_branch
+      changed_when: false
+
+    - name: "Prep - Ensure replaces section exists in manifest"
+      ansible.builtin.lineinfile:
+        path: "{{ complybeacon_remote_dir }}/beacon-distro/manifest.yaml"
+        line: 'replaces:'
+        insertafter: EOF
+        state: present
+
+    - name: "Prep - Update beacon-distro manifest to use current git branch"
+      ansible.builtin.lineinfile:
+        path: "{{ complybeacon_remote_dir }}/beacon-distro/manifest.yaml"
+        line: '  - github.com/complytime/complybeacon/truthbeam => github.com/{{ git_repo_path.stdout }}/truthbeam {{ git_branch.stdout }}'
+        insertafter: '^replaces:'
+        state: present
+
+    - name: "Prep - Clean self-signed-cert directory except openssl.cnf"
+      ansible.builtin.shell:
+        cmd: |
+          cd {{ complybeacon_remote_dir }}/hack/self-signed-cert
+          find . -type f ! -name 'openssl.cnf' -delete
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: "Prep - Generate new self-signed certificates"
+      ansible.builtin.command:
+        cmd: make generate-self-signed-cert
+        chdir: "{{ complybeacon_remote_dir }}"
+      changed_when: true
+
+    # Deployment phase
+    - name: "Deploy - Stop any existing complybeacon containers"
+      ansible.builtin.command:
+        cmd: podman-compose down -v
+        chdir: "{{ complybeacon_remote_dir }}"
+      changed_when: true
+      ignore_errors: true
+
+    - name: "Deploy - Start complybeacon services in background"
+      ansible.builtin.command:
+        cmd: podman-compose up -d --build
+        chdir: "{{ complybeacon_remote_dir }}"
+      changed_when: true
+
+    - name: "Deploy - Wait for services to be ready"
+      ansible.builtin.pause:
+        seconds: 10
+
+    # Verification phase
+    - name: "Verify - Check running containers"
+      ansible.builtin.command:
+        cmd: podman ps --format "table {{ '{{.Names}}' }}\t{{ '{{.Status}}' }}\t{{ '{{.Ports}}' }}"
+      changed_when: false
+      register: podman_containers
+
+    - name: "Verify - Display running containers"
+      ansible.builtin.debug:
+        var: podman_containers.stdout_lines
+
+    - name: "Verify - Check port bindings"
+      ansible.builtin.command:
+        cmd: "podman port {{ item }}"
+      changed_when: false
+      loop:
+        - "{{ complybeacon_remote_dir | basename }}_grafana_1"
+        - "{{ complybeacon_remote_dir | basename }}_loki_1"
+        - "{{ complybeacon_remote_dir | basename }}_compass_1"
+        - "{{ complybeacon_remote_dir | basename }}_collector_1"
+      ignore_errors: true
+      register: port_bindings
+
+    - name: "Verify - Display port bindings"
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ port_bindings.results }}"
+      when: item.stdout_lines is defined
+
+    # Log collection setup
+    - name: "Logs - Note about viewing container logs"
+      ansible.builtin.debug:
+        msg:
+          - "Container logs can be viewed using:"
+          - "  podman logs <container_name>"
+          - "Example: podman logs complybeacon_grafana_1"
+
+    - name: "Info - Display service URLs and information"
+      ansible.builtin.debug:
+        msg:
+          - "Complybeacon services are now running!"
+          - "Grafana UI: http://{{ ansible_default_ipv4.address }}:3000"
+          - "Loki API: http://{{ ansible_default_ipv4.address }}:3100"
+          - "Compass API: http://{{ ansible_default_ipv4.address }}:8081"
+          - "Collector OTLP: http://{{ ansible_default_ipv4.address }}:4317"
+          - "Collector HTTP: http://{{ ansible_default_ipv4.address }}:8088"
+          - "Complybeacon root: {{ complybeacon_remote_dir }}"
+          - ""
+          - "To stop services: cd {{ complybeacon_remote_dir }} && podman-compose down"
+...

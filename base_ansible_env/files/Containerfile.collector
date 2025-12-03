@@ -1,0 +1,24 @@
+FROM registry.access.redhat.com/ubi9/go-toolset:latest AS build-stage
+USER 0
+WORKDIR /build
+
+COPY ./manifest.yaml manifest.yaml
+
+RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.134.0
+RUN --mount=type=cache,target=/root/.cache/go-build /opt/app-root/src/go/bin/builder --config manifest.yaml
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+RUN microdnf install -y ca-certificates
+RUN update-ca-trust
+
+ARG USER_UID=10001
+USER ${USER_UID}
+
+COPY config.yaml /etc/otelcol-beacon/config.yaml
+COPY --chmod=755 --from=build-stage /build/beacon/otelcol-beacon /otelcol-beacon
+
+ENTRYPOINT ["/otelcol-beacon"]
+CMD ["--config", "/etc/otelcol-beacon/config.yaml"]
+
+EXPOSE 4317 4318 12001
