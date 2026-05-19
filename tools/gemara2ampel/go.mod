@@ -6,7 +6,7 @@ require (
 	github.com/carabiner-dev/policy v0.4.2-0.20260120233602-5fe00165fd4f
 	github.com/carabiner-dev/signer v0.3.5
 	github.com/gemaraproj/go-gemara v0.0.0-20260108215115-6f89073164fc
-	github.com/in-toto/attestation v1.1.2
+	github.com/in-toto/attestation v1.2.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/protobuf v1.36.11
