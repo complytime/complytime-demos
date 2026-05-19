@@ -1,12 +1,12 @@
 module gemara2ampel/go
 
-go 1.25.5
+go 1.25.9
 
 require (
 	github.com/carabiner-dev/policy v0.4.2-0.20260120233602-5fe00165fd4f
-	github.com/carabiner-dev/signer v0.3.5
+	github.com/carabiner-dev/signer v0.4.5
 	github.com/gemaraproj/go-gemara v0.0.0-20260108215115-6f89073164fc
-	github.com/in-toto/attestation v1.1.2
+	github.com/in-toto/attestation v1.2.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/protobuf v1.36.11
@@ -15,8 +15,8 @@ require (
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/ProtonMail/go-crypto v1.3.0 // indirect
-	github.com/carabiner-dev/attestation v0.2.0 // indirect
+	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/carabiner-dev/attestation v0.2.1 // indirect
 	github.com/carabiner-dev/vcslocator v0.3.3-0.20260110024210-a5602e9845b5 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
