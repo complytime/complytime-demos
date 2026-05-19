@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/carabiner-dev/policy v0.4.2-0.20260120233602-5fe00165fd4f
 	github.com/carabiner-dev/signer v0.3.5
-	github.com/gemaraproj/go-gemara v0.0.0-20260108215115-6f89073164fc
+	github.com/gemaraproj/go-gemara v0.5.0
 	github.com/in-toto/attestation v1.1.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
@@ -25,7 +25,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/go-git/go-git/v5 v5.19.0 // indirect
-	github.com/goccy/go-yaml v1.19.1 // indirect
+	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
