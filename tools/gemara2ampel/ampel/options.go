@@ -6,7 +6,7 @@ import "github.com/gemaraproj/go-gemara"
 // to Ampel verification policies.
 type TransformOptions struct {
 	// Catalog is an optional catalog used to enrich tenets with control details
-	Catalog *gemara.Catalog
+	Catalog *gemara.ControlCatalog
 
 	// CELTemplates provides custom CEL code templates for generating verification logic
 	// Key: template name, Value: CEL template string with {{.Parameter}} placeholders
@@ -34,7 +34,7 @@ type TransformOption func(*TransformOptions)
 //   - Use requirement text as tenet titles (more descriptive than evidence requirements)
 //   - Add control references to policy metadata (Meta.Controls)
 //   - Include control family information (framework and class)
-func WithCatalog(catalog *gemara.Catalog) TransformOption {
+func WithCatalog(catalog *gemara.ControlCatalog) TransformOption {
 	return func(opts *TransformOptions) {
 		opts.Catalog = catalog
 	}

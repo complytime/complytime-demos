@@ -244,7 +244,7 @@ func assessmentPlanToTenets(
 	methodIndex := 0
 	for _, method := range plan.EvaluationMethods {
 		// Only process automated methods
-		if !isAutomatedMethod(method.Type) {
+		if !isAutomatedMethod(method) {
 			continue
 		}
 
@@ -315,18 +315,14 @@ func getTenetName(method gemara.AcceptedMethod, evidenceReq string) string {
 	}
 
 	// Fallback to method type
-	return fmt.Sprintf("%s verification", method.Type)
+	return fmt.Sprintf("%s verification", method.Type.String())
 }
 
-// isAutomatedMethod checks if an evaluation method type can be automated.
-func isAutomatedMethod(methodType string) bool {
-	automatedTypes := map[string]bool{
-		"automated":       true,
-		"gate":            true,
-		"behavioral":      true,
-		"autoremediation": true,
-	}
-	return automatedTypes[methodType]
+// isAutomatedMethod checks if an evaluation method can be automated.
+// In go-gemara v0.5.0, automation is determined by the Mode field
+// (ModeAutomated) rather than the Type field.
+func isAutomatedMethod(method gemara.AcceptedMethod) bool {
+	return method.Mode == gemara.ModeAutomated
 }
 
 // FromPolicies converts multiple Gemara Layer-3 Policies to an Ampel PolicySet.
@@ -470,11 +466,11 @@ func FromPolicyWithImports(policy *gemara.Policy, opts ...PolicySetOption) (*Pol
 	for _, importedPolicyRef := range policy.Imports.Policies {
 		// Create a Policy with Source reference for external policies
 		extPolicy := &Policy{
-			Id: extractPolicyIdFromReference(importedPolicyRef),
+			Id: extractPolicyIdFromReference(importedPolicyRef.ReferenceId),
 			Source: &PolicyRef{
-				Id: extractPolicyIdFromReference(importedPolicyRef),
+				Id: extractPolicyIdFromReference(importedPolicyRef.ReferenceId),
 				Location: &ResourceDescriptor{
-					Uri: importedPolicyRef,
+					Uri: importedPolicyRef.ReferenceId,
 				},
 			},
 		}

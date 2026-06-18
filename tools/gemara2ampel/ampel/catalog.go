@@ -10,14 +10,14 @@ type CatalogEnrichment struct {
 	// Requirement is the specific assessment requirement
 	Requirement *gemara.AssessmentRequirement
 
-	// Family is the control family
-	Family *gemara.Family
+	// Family is the control group (formerly family)
+	Family *gemara.Group
 }
 
 // lookupRequirement finds a requirement in the catalog by its ID.
 // Returns the control containing the requirement, the requirement itself,
 // and the control family, or nil if not found.
-func lookupRequirement(catalog *gemara.Catalog, requirementID string) *CatalogEnrichment {
+func lookupRequirement(catalog *gemara.ControlCatalog, requirementID string) *CatalogEnrichment {
 	if catalog == nil || requirementID == "" {
 		return nil
 	}
@@ -28,11 +28,11 @@ func lookupRequirement(catalog *gemara.Catalog, requirementID string) *CatalogEn
 		for j := range control.AssessmentRequirements {
 			req := &control.AssessmentRequirements[j]
 			if req.Id == requirementID {
-				// Find the family for this control
-				var family *gemara.Family
-				for k := range catalog.Families {
-					if catalog.Families[k].Id == control.Family {
-						family = &catalog.Families[k]
+				// Find the group for this control
+				var family *gemara.Group
+				for k := range catalog.Groups {
+					if catalog.Groups[k].Id == control.Group {
+						family = &catalog.Groups[k]
 						break
 					}
 				}

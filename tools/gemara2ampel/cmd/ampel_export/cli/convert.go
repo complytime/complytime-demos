@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"gemara2ampel/go/ampel"
 
 	"github.com/gemaraproj/go-gemara"
+	"github.com/gemaraproj/go-gemara/fetcher"
 )
 
 // convertPolicy handles the main policy conversion logic
@@ -17,9 +19,10 @@ func convertPolicy(path string) error {
 	defaultOutputFile := getDefaultOutputFilename(path)
 
 	// Load the policy
-	policy := &gemara.Policy{}
-	pathWithScheme := fmt.Sprintf("file://%s", path)
-	if err := policy.LoadFile(pathWithScheme); err != nil {
+	ctx := context.Background()
+	f := &fetcher.URI{}
+	policy, err := gemara.Load[gemara.Policy](ctx, f, path)
+	if err != nil {
 		return fmt.Errorf("failed to load policy: %w", err)
 	}
 
@@ -28,9 +31,8 @@ func convertPolicy(path string) error {
 
 	// Load catalog if provided
 	if catalogPath != "" {
-		catalog := &gemara.Catalog{}
-		catalogPathWithScheme := fmt.Sprintf("file://%s", catalogPath)
-		if err := catalog.LoadFile(catalogPathWithScheme); err != nil {
+		catalog, err := gemara.Load[gemara.ControlCatalog](ctx, f, catalogPath)
+		if err != nil {
 			return fmt.Errorf("failed to load catalog: %w", err)
 		}
 		transformOpts = append(transformOpts, ampel.WithCatalog(catalog))

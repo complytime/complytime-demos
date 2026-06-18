@@ -341,15 +341,24 @@ attestation.predicate.builder.id == context["builder-id"]
 
 ## Evaluation Method Filtering
 
-Only certain evaluation method types are converted to automated tenets:
+In go-gemara v0.5.0, evaluation methods have two separate fields:
+- **`Type`** (`MethodType`): The category of evaluation — `Behavioral`, `Intent`, `Remediation`, `Gate`
+- **`Mode`** (`ModeType`): Whether the method is `Manual` or `Automated`
 
-| Method Type | Included in Ampel? | Rationale |
-| ----------- | ------------------ | --------- |
-| `automated` | ✅ Yes | Directly automatable with CEL |
-| `gate` | ✅ Yes | Pre-deployment checks |
-| `behavioral` | ✅ Yes | Runtime verification |
-| `autoremediation` | ✅ Yes | Post-verification actions |
-| `manual` | ❌ No | Cannot be automated |
+Only methods with `Mode: Automated` are converted to Ampel tenets. The `Type` field
+determines which CEL template is used:
+
+| Mode | Included in Ampel? | Rationale |
+| ---- | ------------------ | --------- |
+| `Automated` | Yes | Can be expressed as CEL verification logic |
+| `Manual` | No | Requires human evaluation |
+
+| Method Type | Default CEL Template | Description |
+| ----------- | -------------------- | ----------- |
+| `Gate` | `generic-predicate-type` | Pre-deployment pass/fail checks |
+| `Behavioral` | `generic-field-equals` | Runtime behavior verification |
+| `Intent` | `generic-field-equals` | Intent/state verification |
+| `Remediation` | `generic-field-equals` | Post-verification remediation actions |
 
 ## Scope to CEL Filter Mapping
 

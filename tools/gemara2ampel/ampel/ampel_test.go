@@ -110,7 +110,8 @@ func TestGenerateCELFromMethod(t *testing.T) {
 		{
 			name: "SLSA provenance",
 			method: gemara.AcceptedMethod{
-				Type: "automated",
+				Type: gemara.MethodGate,
+				Mode: gemara.ModeAutomated,
 			},
 			evidenceReq:     "SLSA provenance with trusted builder",
 			expectedInCode:  "slsa.dev/provenance/v1",
@@ -119,7 +120,8 @@ func TestGenerateCELFromMethod(t *testing.T) {
 		{
 			name: "Vulnerability scan",
 			method: gemara.AcceptedMethod{
-				Type: "automated",
+				Type: gemara.MethodBehavioral,
+				Mode: gemara.ModeAutomated,
 			},
 			evidenceReq:     "Vulnerability scan with no critical findings",
 			expectedInCode:  "in-toto.io/Statement",
@@ -320,7 +322,7 @@ func createTestPolicy() *gemara.Policy {
 				Id:   "author-001",
 			},
 		},
-		Contacts: gemara.Contacts{
+		Contacts: gemara.RACI{
 			Responsible: []gemara.Contact{
 				{Name: "IT Director"},
 			},
@@ -344,7 +346,8 @@ func createTestPolicy() *gemara.Policy {
 					EvidenceRequirements: "SLSA provenance with trusted builder",
 					EvaluationMethods: []gemara.AcceptedMethod{
 						{
-							Type:        "automated",
+							Type:        gemara.MethodGate,
+							Mode:        gemara.ModeAutomated,
 							Description: "Verify SLSA provenance",
 						},
 					},
@@ -362,22 +365,23 @@ func createTestAssessmentPlan() gemara.AssessmentPlan {
 		EvidenceRequirements: "SLSA provenance with trusted builder",
 		EvaluationMethods: []gemara.AcceptedMethod{
 			{
-				Type:        "automated",
+				Type:        gemara.MethodGate,
+				Mode:        gemara.ModeAutomated,
 				Description: "Verify SLSA provenance",
 			},
 		},
 	}
 }
 
-func createTestCatalog() *gemara.Catalog {
-	return &gemara.Catalog{
+func createTestCatalog() *gemara.ControlCatalog {
+	return &gemara.ControlCatalog{
 		Title: "Test Catalog",
 		Metadata: gemara.Metadata{
 			Id:          "catalog-001",
 			Version:     "1.0",
 			Description: "Test catalog",
 		},
-		Families: []gemara.Family{
+		Groups: []gemara.Group{
 			{
 				Id:          "CF-01",
 				Title:       "Test Control Family",
@@ -389,7 +393,7 @@ func createTestCatalog() *gemara.Catalog {
 				Id:        "CTRL-01",
 				Title:     "Test Control",
 				Objective: "Test control objective",
-				Family:    "CF-01",
+				Group:     "CF-01",
 				AssessmentRequirements: []gemara.AssessmentRequirement{
 					{
 						Id:   "REQ-01",
@@ -417,7 +421,7 @@ func TestFromPolicies(t *testing.T) {
 				Name: "Test Author 2",
 			},
 		},
-		Contacts: gemara.Contacts{},
+		Contacts: gemara.RACI{},
 		Scope:    gemara.Scope{},
 		Imports:  gemara.Imports{},
 		Adherence: gemara.Adherence{
@@ -429,7 +433,8 @@ func TestFromPolicies(t *testing.T) {
 					EvidenceRequirements: "Vulnerability scan with no critical findings",
 					EvaluationMethods: []gemara.AcceptedMethod{
 						{
-							Type:        "automated",
+							Type:        gemara.MethodBehavioral,
+							Mode:        gemara.ModeAutomated,
 							Description: "Verify vulnerability scan results",
 						},
 					},
@@ -469,9 +474,9 @@ func TestFromPolicyWithImports(t *testing.T) {
 	policy := createTestPolicy()
 	policy.Metadata.Id = "main-policy"
 	policy.Title = "Main Policy"
-	policy.Imports.Policies = []string{
-		"git+https://github.com/carabiner-dev/policies#slsa/slsa-builder-id.json",
-		"git+https://github.com/carabiner-dev/policies#vuln/vuln-scan.json",
+	policy.Imports.Policies = []gemara.ArtifactMapping{
+		{ReferenceId: "git+https://github.com/carabiner-dev/policies#slsa/slsa-builder-id.json"},
+		{ReferenceId: "git+https://github.com/carabiner-dev/policies#vuln/vuln-scan.json"},
 	}
 
 	policySet, err := FromPolicyWithImports(policy)
@@ -731,7 +736,8 @@ func TestContextMapping(t *testing.T) {
 					},
 					EvaluationMethods: []gemara.AcceptedMethod{
 						{
-							Type:        "automated",
+							Type:        gemara.MethodGate,
+							Mode:        gemara.ModeAutomated,
 							Description: "Verify SLSA builder ID",
 						},
 					},
@@ -825,7 +831,8 @@ func TestContextMapping_ParameterIDsPreserved(t *testing.T) {
 					},
 					EvaluationMethods: []gemara.AcceptedMethod{
 						{
-							Type:        "automated",
+							Type:        gemara.MethodGate,
+							Mode:        gemara.ModeAutomated,
 							Description: "Test method",
 						},
 					},
@@ -868,7 +875,8 @@ func TestContextMapping_RuntimeParameters(t *testing.T) {
 					},
 					EvaluationMethods: []gemara.AcceptedMethod{
 						{
-							Type:        "automated",
+							Type:        gemara.MethodGate,
+							Mode:        gemara.ModeAutomated,
 							Description: "Verify runtime value",
 						},
 					},

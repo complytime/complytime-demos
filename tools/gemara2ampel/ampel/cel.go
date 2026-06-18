@@ -44,11 +44,13 @@ var DefaultCELTemplates = map[string]string{
 
 // MethodTypeToCELTemplate maps Gemara evaluation method types to
 // default CEL template names for common scenarios.
-var MethodTypeToCELTemplate = map[string]string{
-	"automated":       "generic-field-equals",
-	"gate":            "generic-predicate-type",
-	"behavioral":      "generic-field-equals",
-	"autoremediation": "generic-field-equals",
+// In go-gemara v0.5.0, MethodType is an int enum (MethodBehavioral,
+// MethodIntent, MethodRemediation, MethodGate).
+var MethodTypeToCELTemplate = map[gemara.MethodType]string{
+	gemara.MethodBehavioral:  "generic-field-equals",
+	gemara.MethodIntent:      "generic-field-equals",
+	gemara.MethodGate:        "generic-predicate-type",
+	gemara.MethodRemediation: "generic-field-equals",
 }
 
 // GenerateCEL creates a CEL expression from a template and parameters.
