@@ -1,17 +1,21 @@
 name: Scheduled Jobs
 
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: '0 0 * * *'
 
+permissions:
+  contents: read
+  actions: none
+  id-token: none
+  security-events: none
+
 jobs:
-  security_audit:
-    name: Vulnerabilities Scan
+  call_reusable_scheduled:
+    name: OSV-Scanner and Scorecards
     permissions:
       contents: read
       actions: read           # Required to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
       security-events: write  # Require writing security events to upload SARIF file to security tab
-    uses: complytime/org-infra/.github/workflows/reusable_scheduled.yml@main
+      id-token: write         # Needed to access GitHub's OIDC token which verifies the authenticity of the result when publishing it.
+    uses: complytime/org-infra/.github/workflows/reusable_scheduled.yml@638b2037394ca0f0b860a135c7c27dce75fd3c03 # v0.5.0

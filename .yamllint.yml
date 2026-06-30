@@ -10,3 +10,5 @@ rules:
   indentation:
     spaces: consistent
   line-length: disable
+  truthy:
+    allowed-values: ["true", "false", "on"]
