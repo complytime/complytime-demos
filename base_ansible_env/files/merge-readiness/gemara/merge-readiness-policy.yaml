@@ -1,0 +1,87 @@
+title: Merge Readiness Policy
+metadata:
+    id: merge-readiness-policy
+    type: Policy
+    gemara-version: "1.2.0"
+    description: >-
+        Automated evaluation policy for merge readiness assessment.
+        Combines CI pipeline health and branch protection controls
+        into a unified merge readiness gate.
+    author:
+        id: complytime
+        name: ComplyTime
+        type: Software Assisted
+    mapping-references:
+        - id: merge-readiness
+          title: Merge Readiness Controls
+          version: 0.1.0
+          description: Control catalog for merge readiness assessment
+          url: file://../catalogs/merge-readiness-catalog.yaml
+contacts:
+    responsible:
+        - name: Repository Maintainer
+    accountable:
+        - name: Security Team
+scope:
+    in:
+        technologies:
+            - GitHub
+        users:
+            - Repository maintainers
+            - CI/CD pipelines
+imports:
+    catalogs:
+        - reference-id: merge-readiness
+adherence:
+    evaluation-methods:
+        - id: ampel-automated-evaluation
+          type: Behavioral
+          mode: Automated
+          description: AMPEL automated merge readiness evaluation
+          executor:
+              id: ampel
+              name: AMPEL
+              type: Software
+    assessment-plans:
+        - id: ci-checks-pass
+          requirement-id: ci-checks-pass
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: require-pull-request
+          requirement-id: require-pull-request
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: minimum-approvals
+          requirement-id: minimum-approvals
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: block-force-push
+          requirement-id: block-force-push
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: prevent-admin-bypass
+          requirement-id: prevent-admin-bypass
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: require-code-owner-review
+          requirement-id: require-code-owner-review
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated

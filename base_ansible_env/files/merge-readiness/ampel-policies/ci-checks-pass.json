@@ -1,0 +1,27 @@
+{
+  "id": "ci-checks-pass",
+  "meta": {
+    "description": "Validate all CI check runs on the protected branch completed successfully",
+    "controls": [
+      { "framework": "merge-readiness", "class": "ci-pipeline", "id": "ci-pipeline-health" }
+    ]
+  },
+  "tenets": [
+    {
+      "id": "01",
+      "code": "has(predicates[0].data.values) && has(predicates[0].data.values.total_count) && predicates[0].data.values.total_count > 0 && predicates[0].data.values.check_runs.all(cr, cr.status == \"completed\" && (cr.conclusion == \"success\" || cr.conclusion == \"skipped\" || cr.conclusion == \"neutral\"))",
+      "predicates": {
+        "types": [
+          "http://github.com/complytime/complytime-demos/snappy-specs/github/check-runs.yaml"
+        ]
+      },
+      "assessment": {
+        "message": "All CI check runs completed successfully."
+      },
+      "error": {
+        "message": "One or more CI check runs failed or are incomplete.",
+        "guidance": "Review the failing check runs in the repository Actions tab and fix the underlying issues before merging."
+      }
+    }
+  ]
+}

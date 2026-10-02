@@ -1,0 +1,343 @@
+---
+# Merge Readiness Assessment Demo
+#
+# Demonstrates a unified merge readiness gate using complyctl with the Ampel
+# provider. Evaluates CI pipeline health and branch protection rules as a
+# single Gemara EvaluationLog, then runs a shadow gate that emits a Gemara
+# EnforcementLog recommendation.
+#
+# Prerequisites:
+#   - Fedora VM provisioned via base_vms/fedora/Vagrantfile
+#   - GITHUB_TOKEN exported on the controller with scopes:
+#       checks:read, administration:read
+#
+# Usage:
+#   export GITHUB_TOKEN=$(gh auth token)
+#   ansible-playbook demo_complyctl_merge_readiness.yml
+#
+- name: "Merge readiness assessment with complyctl, Ampel, and shadow gate"
+  hosts: demo_vm
+  become: false
+  vars:
+    github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+    complyctl_workdir: "~/complyctl-demo-merge-readiness"
+    # Pin third-party Go tool versions for reproducibility
+    # Override with: ansible-playbook -e snappy_version=latest -e ampel_version=latest
+    snappy_version: "v0.2.6"
+    ampel_version: "v1.3.6"
+    oras_version: "1.2.2"
+    # Go binary PATH for tasks that invoke Go-installed tools
+    go_bin_path: "{{ ansible_facts['env']['HOME'] }}/go/bin:{{ ansible_facts['env']['PATH'] }}"
+    # Local OCI registry for the custom Gemara policy bundle
+    local_registry: "localhost:5000"
+    policy_id: "merge-readiness"
+    # Target repository to scan
+    target_org: "complytime"
+    target_repo: "complytime-demos"
+    target_branch: "main"
+
+  tasks:
+    # ----------------------------------------------------------------
+    # Phase 1: Validate prerequisites
+    # ----------------------------------------------------------------
+    - name: "Validate - Check GITHUB_TOKEN is set in the controller environment"
+      ansible.builtin.fail:
+        msg: >-
+          GITHUB_TOKEN is not set. Export it before running this playbook:
+            export GITHUB_TOKEN=$(gh auth token)
+          The token requires these scopes:
+            checks:read, administration:read
+      when: github_token | length == 0
+      delegate_to: localhost
+
+    # ----------------------------------------------------------------
+    # Phase 2: Install tools
+    # ----------------------------------------------------------------
+    - name: "Setup - Install complyctl and ampel provider via dnf"
+      ansible.builtin.dnf:
+        name:
+          - complyctl
+          - complytime-providers-ampel
+        state: latest  # noqa: package-latest - demo requires latest packages
+      become: true
+
+    - name: "Setup - Install snappy tool via go install"
+      ansible.builtin.command:
+        cmd: "go install github.com/carabiner-dev/snappy@{{ snappy_version }}"
+      changed_when: true
+      environment:
+        PATH: "{{ go_bin_path }}"
+
+    - name: "Setup - Install ampel CLI tool via go install"
+      ansible.builtin.command:
+        cmd: "go install github.com/carabiner-dev/ampel/cmd/ampel@{{ ampel_version }}"
+      changed_when: true
+      environment:
+        PATH: "{{ go_bin_path }}"
+
+    - name: "Setup - Ensure ~/go/bin is on PATH for interactive sessions"
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_facts['env']['HOME'] }}/.bashrc"
+        line: 'export PATH="$HOME/go/bin:$PATH"'
+        regexp: 'go/bin'
+        state: present
+
+    - name: "Setup - Install oras CLI for local OCI registry operations"
+      become: true
+      block:
+        - name: "Setup - Download oras binary"
+          ansible.builtin.get_url:
+            url: "https://github.com/oras-project/oras/releases/download/v{{ oras_version }}/oras_{{ oras_version }}_linux_amd64.tar.gz"
+            dest: "/tmp/oras.tar.gz"
+            mode: "0644"
+
+        - name: "Setup - Extract oras binary to /usr/local/bin"
+          ansible.builtin.unarchive:
+            src: "/tmp/oras.tar.gz"
+            dest: "/usr/local/bin/"
+            remote_src: true
+            extra_opts:
+              - "oras"
+
+    # ----------------------------------------------------------------
+    # Phase 3: Local OCI registry for custom policy
+    # ----------------------------------------------------------------
+    - name: "Registry - Start local zot OCI registry via podman"
+      containers.podman.podman_container:
+        name: zot-registry
+        image: ghcr.io/project-zot/zot-linux-amd64:latest
+        state: started
+        ports:
+          - "5000:5000"
+        recreate: false
+      become: true
+
+    - name: "Registry - Wait for zot registry to be ready"
+      ansible.builtin.uri:
+        url: "http://{{ local_registry }}/v2/"
+        method: GET
+        status_code: 200
+      register: registry_check
+      retries: 10
+      delay: 2
+      until: registry_check.status == 200
+
+    # ----------------------------------------------------------------
+    # Phase 4: Deploy artifacts to the VM
+    # ----------------------------------------------------------------
+    - name: "Deploy - Create workspace directories"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ complyctl_workdir }}/.complytime"
+        - "{{ complyctl_workdir }}/snappy-specs/github"
+        - "{{ complyctl_workdir }}/ampel-policies"
+        - "{{ complyctl_workdir }}/gemara"
+        - "{{ complyctl_workdir }}/gate"
+
+    - name: "Deploy - Copy snappy spec files"
+      ansible.builtin.copy:
+        src: "files/merge-readiness/snappy-specs/"
+        dest: "{{ complyctl_workdir }}/snappy-specs/"
+        mode: "0644"
+
+    - name: "Deploy - Copy ampel policy JSON files"
+      ansible.builtin.copy:
+        src: "files/merge-readiness/ampel-policies/"
+        dest: "{{ complyctl_workdir }}/ampel-policies/"
+        mode: "0644"
+
+    - name: "Deploy - Copy Gemara catalog and policy"
+      ansible.builtin.copy:
+        src: "files/merge-readiness/gemara/"
+        dest: "{{ complyctl_workdir }}/gemara/"
+        mode: "0644"
+
+    - name: "Deploy - Copy shadow gate script"
+      ansible.builtin.copy:
+        src: "files/merge-readiness/shadow-gate.sh"
+        dest: "{{ complyctl_workdir }}/gate/shadow-gate.sh"
+        mode: "0755"
+
+    # ----------------------------------------------------------------
+    # Phase 5: Push custom policy to local OCI registry
+    # ----------------------------------------------------------------
+    - name: "Policy - Push Gemara policy bundle to local registry"
+      ansible.builtin.command:
+        cmd: >-
+          oras push {{ local_registry }}/policies-{{ policy_id }}:latest
+          --artifact-type application/vnd.gemara.bundle.v1
+          gemara/merge-readiness-catalog.yaml:application/vnd.gemara.catalog.v1+yaml
+          gemara/merge-readiness-policy.yaml:application/vnd.gemara.policy.v1+yaml
+          --plain-http
+        chdir: "{{ complyctl_workdir }}"
+      changed_when: true
+
+    - name: "Policy - Verify policy is accessible in local registry"
+      ansible.builtin.command:
+        cmd: "oras manifest fetch {{ local_registry }}/policies-{{ policy_id }}:latest --plain-http"
+      register: manifest_result
+      changed_when: false
+
+    - name: "Policy - Display pushed manifest"
+      ansible.builtin.debug:
+        var: manifest_result.stdout_lines
+
+    # ----------------------------------------------------------------
+    # Phase 6: Configure complyctl workspace
+    # ----------------------------------------------------------------
+    - name: "Config - Write complytime.yaml"
+      ansible.builtin.copy:
+        dest: "{{ complyctl_workdir }}/.complytime/complytime.yaml"
+        mode: "0644"
+        content: |
+          policies:
+            - url: {{ local_registry }}/policies-{{ policy_id }}:latest
+              id: {{ policy_id }}
+              skip_verify: true
+              plain_http: true
+          complypacks:
+            - url: quay.io/complytime/complypack-ampel-branch-protection:latest
+              id: ampel-bp-pack
+          targets:
+            - id: {{ target_repo }}
+              policies:
+                - {{ policy_id }}
+              variables:
+                url: https://github.com/{{ target_org }}/{{ target_repo }}
+                specs: builtin:github/branch-rules.yaml,{{ complyctl_workdir }}/snappy-specs/github/check-runs.yaml
+                branches: {{ target_branch }}
+                ampel_policy_dir: {{ complyctl_workdir }}/ampel-policies
+
+    - name: "Config - Fetch policy from local registry"
+      ansible.builtin.command:
+        cmd: "complyctl get"
+        chdir: "{{ complyctl_workdir }}"
+      changed_when: true
+      environment:
+        PATH: "{{ go_bin_path }}"
+
+    - name: "Config - Generate assessment artifacts"
+      ansible.builtin.command:
+        cmd: "complyctl generate --policy-id {{ policy_id }}"
+        chdir: "{{ complyctl_workdir }}"
+      changed_when: true
+      environment:
+        PATH: "{{ go_bin_path }}"
+
+    - name: "Config - Run complyctl doctor to verify configuration"
+      ansible.builtin.command:
+        cmd: "complyctl doctor"
+        chdir: "{{ complyctl_workdir }}"
+      register: doctor_result
+      changed_when: false
+      failed_when: false
+      environment:
+        PATH: "{{ go_bin_path }}"
+
+    - name: "Config - Display doctor output"
+      ansible.builtin.debug:
+        var: doctor_result.stdout_lines
+
+    # ----------------------------------------------------------------
+    # Phase 7: Run merge readiness scan
+    # ----------------------------------------------------------------
+    - name: "Scan - Execute merge readiness assessment"
+      ansible.builtin.command:
+        cmd: "complyctl scan {{ target_repo }} --format pretty"
+        chdir: "{{ complyctl_workdir }}"
+      environment:
+        GITHUB_TOKEN: "{{ github_token }}"
+        PATH: "{{ go_bin_path }}"
+      no_log: true
+      register: scan_result
+      changed_when: true
+      failed_when: false
+
+    - name: "Scan - Display scan results"
+      ansible.builtin.debug:
+        var: scan_result.stdout_lines
+
+    - name: "Scan - Fail if scan encountered an operational error (exit code > 1)"
+      ansible.builtin.fail:
+        msg: >-
+          complyctl scan failed with exit code {{ scan_result.rc | default('unknown') }}.
+          Check the scan output above for details.
+      when: scan_result.rc | default(0) | int > 1
+
+    # ----------------------------------------------------------------
+    # Phase 8: Shadow gate — emit EnforcementLog
+    # ----------------------------------------------------------------
+    - name: "Gate - Find the latest EvaluationLog"
+      ansible.builtin.find:
+        paths: "{{ complyctl_workdir }}/.complytime/scan"
+        patterns: "evaluation-log-*.yaml"
+        recurse: false
+      register: eval_logs
+
+    - name: "Gate - Fail if no EvaluationLog was produced"
+      ansible.builtin.fail:
+        msg: "No EvaluationLog found. The scan may have failed before producing output."
+      when: eval_logs.files | length == 0
+
+    - name: "Gate - Run shadow gate on the latest EvaluationLog"
+      ansible.builtin.command:
+        cmd: >-
+          {{ complyctl_workdir }}/gate/shadow-gate.sh
+          {{ (eval_logs.files | sort(attribute='mtime') | last).path }}
+          {{ complyctl_workdir }}/.complytime/scan
+      register: gate_result
+      changed_when: true
+
+    - name: "Gate - Display shadow gate output"
+      ansible.builtin.debug:
+        var: gate_result.stdout_lines
+
+    # ----------------------------------------------------------------
+    # Phase 9: Fetch results to the controller
+    # ----------------------------------------------------------------
+    - name: "Fetch - Create local downloads directory"
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: "./downloads_merge_readiness/"
+        state: directory
+        mode: "0755"
+
+    - name: "Fetch - Find all scan and gate artifacts"
+      ansible.builtin.find:
+        paths: "{{ complyctl_workdir }}"
+        patterns:
+          - "evaluation-log-*.yaml"
+          - "enforcement-log-*.yaml"
+          - "report-*.md"
+          - "*-snappy.intoto.json"
+          - "*-ampel.intoto.json"
+        recurse: true
+      register: all_artifacts
+
+    - name: "Fetch - Retrieve artifacts from remote host"
+      ansible.builtin.fetch:
+        src: "{{ item.path }}"
+        dest: "./downloads_merge_readiness/"
+        flat: true
+      loop: "{{ all_artifacts.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: "Fetch - Display artifact summary"
+      ansible.builtin.debug:
+        msg: |
+          Downloaded artifacts are available in: ./downloads_merge_readiness/
+
+          Evidence chain:
+            1. Snappy in-toto attestations  — raw GitHub API evidence
+            2. Ampel in-toto attestations    — CEL policy evaluation results
+            3. Gemara EvaluationLog          — unified assessment per requirement
+            4. Gemara EnforcementLog         — shadow gate recommendation
+
+          To inspect:
+            cat downloads_merge_readiness/evaluation-log-*.yaml
+            cat downloads_merge_readiness/enforcement-log-*.yaml
+...
