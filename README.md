@@ -16,13 +16,21 @@ The environment uses two simple, widely available tools:
   packages, and creates an Ansible user.
 - **Ansible**: Configures the VM in a reproducible way via playbooks.
 
-Three playbooks are available:
+Setup playbooks prepare the VM with tools and content:
 
 | Playbook | Purpose |
 |----------|---------|
 | `populate_complyctl_dev_binaries.yml` | Build binaries locally, copy to VM. Fast iteration for development. |
 | `populate_complyctl_dev_rpm.yml` | Build RPMs from local branches on the VM. Simulates Fedora packaging. |
 | `populate_complyctl_dev_content.yml` | Configure policies and fetch content for compliance scanning. |
+
+Demo playbooks run end-to-end assessment scenarios:
+
+| Playbook | Purpose | Guide |
+|----------|---------|-------|
+| `demo_complyctl_fedora.yml` | CIS benchmark scan on the Fedora VM using the OpenSCAP provider. | |
+| `demo_complyctl_github.yml` | Branch protection scan on GitHub using the Ampel provider. | |
+| `demo_complyctl_merge_readiness.yml` | Merge readiness gate combining CI health and branch protection. | [docs/demo-merge-readiness.md](docs/demo-merge-readiness.md) |
 
 All playbooks require local clones of two repositories:
 
