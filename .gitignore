@@ -11,6 +11,7 @@
 # Ignore local changes to this file
 base_ansible_env/ansible_inventory
 base_ansible_env/downloads_complyctl_*
+base_ansible_env/downloads_merge_readiness/
 
 # Speckit — managed by specify init (recreate with: specify init --ai opencode)
 .specify/extensions.yml

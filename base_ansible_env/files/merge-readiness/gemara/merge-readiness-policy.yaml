@@ -1,0 +1,127 @@
+title: Merge Readiness Policy
+metadata:
+    id: merge-readiness-policy
+    type: Policy
+    gemara-version: "1.2.0"
+    description: >-
+        Automated evaluation policy for merge readiness assessment.
+        Combines CI pipeline health and branch protection controls
+        into a unified merge readiness gate.
+    author:
+        id: complytime
+        name: ComplyTime
+        type: Software Assisted
+    mapping-references:
+        - id: merge-readiness
+          title: Merge Readiness Controls
+          version: 0.1.0
+          description: Control catalog for merge readiness assessment
+          url: file://../catalogs/merge-readiness-catalog.yaml
+        - id: merge-readiness-risks
+          title: Merge Readiness Risks
+          version: 0.1.0
+          description: Risk catalog for merge readiness assessment
+          url: file://../catalogs/merge-readiness-risks.yaml
+contacts:
+    responsible:
+        - name: Repository Maintainer
+    accountable:
+        - name: Security Team
+scope:
+    in:
+        technologies:
+            - GitHub
+        users:
+            - Repository maintainers
+            - CI/CD pipelines
+imports:
+    catalogs:
+        - reference-id: merge-readiness
+    risks:
+        - reference-id: merge-readiness-risks
+adherence:
+    mitigated-risks:
+        - risk-id: R-CI
+          controls:
+              - ci-pipeline-health
+          rationale: >-
+              Requiring all CI check runs to complete successfully prevents
+              defective or untested changes from reaching the protected branch.
+        - risk-id: R-REVIEW
+          controls:
+              - pull-request-enforcement
+              - approval-requirements
+              - code-owner-enforcement
+          rationale: >-
+              Enforcing pull request workflows, minimum approvals, and code
+              owner review ensures changes receive adequate peer review before
+              merging.
+        - risk-id: R-INTEGRITY
+          controls:
+              - force-push-restriction
+              - admin-bypass-prevention
+          rationale: >-
+              Blocking force pushes and admin bypass protects the integrity
+              of the branch history and the effectiveness of all other controls.
+    evaluation-methods:
+        - id: ampel-automated-evaluation
+          type: Behavioral
+          mode: Automated
+          description: AMPEL automated merge readiness evaluation
+          executor:
+              id: ampel
+              name: AMPEL
+              type: Software
+    enforcement-methods:
+        - id: shadow-gate
+          type: Gate
+          description: >-
+              Shadow gate that reads the EvaluationLog and emits an
+              EnforcementLog recommendation without mutating the repository.
+          executor:
+              id: shadow-gate
+              name: Shadow Gate
+              type: Software
+    assessment-plans:
+        - id: ci-checks-pass
+          requirement-id: ci-checks-pass
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: require-pull-request
+          requirement-id: require-pull-request
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: minimum-approvals
+          requirement-id: minimum-approvals
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: block-force-push
+          requirement-id: block-force-push
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: prevent-admin-bypass
+          requirement-id: prevent-admin-bypass
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
+        - id: require-code-owner-review
+          requirement-id: require-code-owner-review
+          frequency: on-demand
+          evaluation-methods:
+              - id: ampel-automated-evaluation
+                type: Behavioral
+                mode: Automated
