@@ -22,6 +22,4 @@ jobs:
       contents: read
       actions: read           # Needed to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
       security-events: write  # Needed to upload the results to code-scanning dashboard.
-      id-token: write         # Required for OIDC token generation (trivy_image job)
-      packages: write         # Required for reusable workflow validation (trivy_image job)
-    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main # zizmor: ignore[unpinned-uses]
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@8f347ba1aa2c7e9eb3b70e69c1709ddb456cd64a # v0.9.0
