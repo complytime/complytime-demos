@@ -4,16 +4,16 @@ name: Compliance Checks
 on:
   workflow_dispatch:
     inputs:
-      policy_url:
-        description: 'URL to the policy to use for compliance'
-        required: true
-        type: string
-        default: 'https://github.com/complytime/org-infra#compliance/ampel/branch-protection-rules.json'
-      push_attestation:
-        description: 'Push the attestation to the repository'
+      complytime_config_path:
+        description: 'Relative path of the complytime configuration file in this repository'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: '.complytime/complytime.yaml'
+      policy_id:
+        description: 'Policy ID to use for complyctl generate and scan commands'
+        required: false
+        type: string
+        default: 'ampel-bp'
 
 permissions:
   contents: read
@@ -26,12 +26,9 @@ jobs:
     name: Compliance Evaluation
     permissions:
       contents: read
-      actions: read
-      id-token: write
-      attestations: write
-    uses: complytime/org-infra/.github/workflows/reusable_compliance.yml@main # zizmor: ignore[unpinned-uses]
+    uses: complytime/org-infra/.github/workflows/reusable_compliance.yml@8f347ba1aa2c7e9eb3b70e69c1709ddb456cd64a # v0.9.0
     with:
-      policy_url: ${{ inputs.policy_url }}
-      push_attestation: ${{ inputs.push_attestation }}
+      complytime_config_path: ${{ inputs.complytime_config_path || '.complytime/complytime.yaml' }}
+      policy_id: ${{ inputs.policy_id || 'ampel-bp' }}
     secrets:
       source_token: ${{ secrets.GITHUB_TOKEN }}
