@@ -6,6 +6,7 @@ tracker:
             repos:
                 - fullsend-ai/fullsend
                 - fullsend-ai/agents
+runtime: pi
 roles:
     - review
 agents:
