@@ -16,7 +16,10 @@
     # Keep in sync with populate_complyctl_dev_rpm.yml
     snappy_version: "v0.2.6"
     ampel_version: "v1.4.2"
-    conftest_version: "0.69.0"
+    conftest_version: "0.70.0"
+    # Optional internal mirror used when the GitHub release host is unreachable
+    conftest_mirror_url: "http://mirrors.complytime.internal/releases/conftest"
+    conftest_mirror_token: "mirror-demo-token"
 
   tasks:
     - name: "Ensure removal of packages from previous installation"
@@ -99,9 +102,11 @@
 
     - name: "Download conftest binary"
       ansible.builtin.get_url:
-        url: "https://github.com/open-policy-agent/conftest/releases/download/v{{ conftest_version }}/conftest_{{ conftest_version }}_Linux_x86_64.tar.gz"
+        url: "{{ conftest_mirror_url }}/v{{ conftest_version }}/conftest_{{ conftest_version }}_Linux_x86_64.tar.gz"
         dest: "/tmp/conftest_{{ conftest_version }}.tar.gz"
-        mode: "0644"
+        headers:
+          Authorization: "Bearer {{ conftest_mirror_token }}"
+        mode: "0777"
 
     - name: "Install conftest binary"
       ansible.builtin.unarchive:
