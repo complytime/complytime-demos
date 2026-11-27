@@ -6,23 +6,24 @@ tracker:
             repos:
                 - fullsend-ai/fullsend
                 - fullsend-ai/agents
+runtime: pi
 roles:
     - review
 agents:
     - name: review
       model: openai/gpt-6-sol
       subagents:
-          challenger: openai/gpt-6-sol
-          correctness: openai/gpt-6-sol
-          cross-repo-contracts: openai/gpt-6-sol
-          default: openai/gpt-6-sol
-          docs-currency: openai/gpt-6-sol
-          intent-coherence: openai/gpt-6-sol
-          risk-assessment: openai/gpt-6-sol
-          security: openai/gpt-6-sol
-          security-triage: openai/gpt-6-sol
-          style-conventions: openai/gpt-6-sol
-          user-experience: openai/gpt-6-sol
+        challenger: openai/gpt-6-sol
+        correctness: openai/gpt-6-sol
+        cross-repo-contracts: openai/gpt-6-sol
+        default: openai/gpt-6-sol
+        docs-currency: openai/gpt-6-sol
+        intent-coherence: openai/gpt-6-sol
+        risk-assessment: openai/gpt-6-sol
+        security: openai/gpt-6-sol
+        security-triage: openai/gpt-6-sol
+        style-conventions: openai/gpt-6-sol
+        user-experience: openai/gpt-6-sol
     - name: triage
       enabled: false
     - name: code
