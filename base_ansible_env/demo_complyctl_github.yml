@@ -8,7 +8,7 @@
     # Pin third-party Go tool versions for reproducibility
     # Override with: ansible-playbook -e snappy_version=latest -e ampel_version=latest
     snappy_version: "v0.2.6"
-    ampel_version: "v1.3.6"
+    ampel_version: "v1.4.2"
     # Go binary PATH for tasks that invoke Go-installed tools
     go_bin_path: "{{ ansible_facts['env']['HOME'] }}/go/bin:{{ ansible_facts['env']['PATH'] }}"
 
@@ -41,7 +41,7 @@
 
     - name: "Setup - Install ampel CLI tool via go install"
       ansible.builtin.command:
-        cmd: "go install github.com/carabiner-dev/ampel/cmd/ampel@{{ ampel_version }}"
+        cmd: "go install github.com/policylabs/ampel/cmd/ampel@{{ ampel_version }}"
       changed_when: true
       environment:
         PATH: "{{ go_bin_path }}"

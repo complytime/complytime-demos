@@ -1,0 +1,46 @@
+title: Merge Readiness Risks
+metadata:
+    id: merge-readiness-risks
+    type: RiskCatalog
+    gemara-version: "1.2.0"
+    version: "1"
+    description: >-
+        Adverse outcomes that merge readiness controls are designed to
+        prevent. Risk severity reflects the potential impact on the
+        protected branch when the corresponding control is absent or
+        misconfigured.
+    author:
+        id: complytime
+        name: ComplyTime
+        type: Software Assisted
+groups:
+    - id: assurance
+      title: Assurance
+      description: Incorrect merge decisions due to missing or insufficient evidence
+      appetite: Minimal
+      max-severity: Critical
+risks:
+    - id: R-CI
+      title: Defective change integrated without CI verification
+      description: >-
+          A change reaches the protected branch while one or more
+          required CI check runs have not completed successfully,
+          allowing defects or regressions to be integrated.
+      group: assurance
+      severity: High
+    - id: R-REVIEW
+      title: Unreviewed change reaches the protected branch
+      description: >-
+          A change is merged without adequate peer review because
+          pull request requirements, minimum approval counts, or
+          code owner review rules are not enforced.
+      group: assurance
+      severity: High
+    - id: R-INTEGRITY
+      title: Repository history manipulated or protection circumvented
+      description: >-
+          The protected branch history is altered through force pushes
+          or administrative bypass, undermining the integrity of the
+          change record and the effectiveness of all other controls.
+      group: assurance
+      severity: Critical
